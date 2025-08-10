@@ -121,7 +121,7 @@ Function IsDocumentsRedirected {
     }
 }  
 
-Function MoveProfileFolders {
+<#Function MoveProfileFolders {
   # Define source and destination paths
   $PrimaryUsers = FindPrimaryUser
 
@@ -185,9 +185,9 @@ Function MoveProfileFolders {
     }
     Write-Log -Message "Folder moves processing completed." -LogFile $LogFileLocation -AddTimestamp
   }
-}  ## end function
+}#>  ## end function
 
-Function DeleteCachedProfile {
+<#Function DeleteCachedProfile {
   $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object { -not $_.Special } | Select-Object -ExpandProperty LocalPath | ForEach-Object {
     Split-Path $_ -Leaf
   }
@@ -199,7 +199,28 @@ Function DeleteCachedProfile {
       Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
     }    
   }  
-}
+<#
+.SYNOPSIS
+>
+
+.DESCRIPTION
+Long description
+
+.PARAMETER Message
+Parameter description
+
+.PARAMETER LogFile
+Parameter description
+
+.PARAMETER AddTimestamp
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Write-Log {
   param (
       [string]$Message,
