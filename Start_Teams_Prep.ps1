@@ -33,9 +33,9 @@ https://github.com/al-lopez-techandacct/DPW_Start_Teams_Post_IPU.git
 
 #>
 
-param (
+<#param (
     [switch]$system
-)
+)#>
 
 Function IsTeamsInstalled {
   try {
@@ -120,85 +120,6 @@ Function IsDocumentsRedirected {
       return "Not Re-Directed"
     }
 }  
-
-<#Function MoveProfileFolders {
-  # Define source and destination paths
-  $PrimaryUsers = FindPrimaryUser
-
-  foreach ($PrimaryUser in $PrimaryUsers) {
-    $PrimaryUser = $PrimaryUser -split '\\'
-    $PrimaryUser = $PrimaryUser[1]
-
-    # Array of folders to be moved.
-    $MoveFolders = "C:\Users\$PrimaryUser\Documents", "C:\Users\$PrimaryUser\Downloads", "C:\Users\$PrimaryUser\Desktop", "C:\users\$PrimaryUser\AppData\Local\Microsoft\Outlook"
-    # Where we're moving the folder to.
-    $dst = "$BackupFolderLocation\$PrimaryUser"
-    if (-Not (Test-Path -Path $dst)) {
-      New-Item -ItemType Directory -Path $dst
-      Write-Log -Message "Folder created: $dst." -LogFile $LogFileLocation -AddTimestamp
-    }
-    
-    IsDocumentsRedirected $PrimaryUser
-    Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected." -LogFile $LogFileLocation -AddTimestamp
-    if ($ReDirected -eq "Not Re-Directed") {
-          Foreach ($MoveFolder in $MoveFolders) {          
-            if($MoveFolder -like "*Outlook*"){            
-              # Find and move all .ost files
-              try {
-                Move-Item -Path "$MoveFolder\*.ost" -Destination $dst -Force
-              }
-              catch [System.Exception] {
-                Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-              }            
-            }
-            else{
-              try {
-                Move-Item -Path $MoveFolder -Destination $dst -Force
-              }
-              catch [System.Exception] {
-                Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-              }
-
-            }
-          }
-    }
-    else {  ## is re-directed
-      Foreach ($MoveFolder in $MoveFolders) {          
-        if($MoveFolder -like "*Outlook*"){            
-          # Find and move all .ost files
-          try {
-            Move-Item -Path "$MoveFolder\*.ost" -Destination $dst -Force
-          }
-          catch [System.Exception] {
-            Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-          }
-        }
-        if(-not ($MoveFolder -like "*Documents*" -or $MoveFolder -like "*Outlook*")){
-          try {
-            Move-Item -Path $MoveFolder -Destination $dst -Force
-          }
-          catch [System.Exception] {
-            Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-          }
-        } 
-      }       
-    }
-    Write-Log -Message "Folder moves processing completed." -LogFile $LogFileLocation -AddTimestamp
-  }
-}#>  ## end function
-
-<#Function DeleteCachedProfile {
-  $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object { -not $_.Special } | Select-Object -ExpandProperty LocalPath | ForEach-Object {
-    Split-Path $_ -Leaf
-  }
-  foreach ($UserProfile in $UserProfiles){
-    try {
-      Get-WMIObject -class Win32_UserProfile | where {($_.LocalPath -eq "C:\Users\$UserProfile")} | Remove-WmiObject
-    }
-    catch [System.Exception] {
-      Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-    }    
-  }#>
 
 function Write-Log {
   param (
@@ -341,39 +262,13 @@ Function RestoreProfileFolders {
     #}
 }
 
-<#Function AddBackupFolderPermissions {
-  # Get all folders in the path and store them in an array
-  $subfolderPaths = Get-ChildItem -Path $BackupFolderLocation -Directory
-
-  foreach ($subfolderPath in $subfolderPaths){
-    # Loop through the array and set the permissions based on the folder name (username).
-    $domainUser = $subfolderPath
-    
-    # Grant Modify to the domain user
-    $UserPerm = "Windows-10-Upgr\" + $domainUser + ":(M)"
-    $FolderToPerm = $BackupFolderLocation +"\"+ $domainUser
-    # Grant Full Control to the local Administrators group
-    $AdminPerm = "Administrators:(F)"
-
-    try {
-            # Removes all ACLs and restores default inherited permissions.
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c C:\Windows\System32\icacls.exe $FolderToPerm /reset /t" -WindowStyle Hidden -Wait
-            # Add permissions for the user and administrator.
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c C:\Windows\System32\icacls.exe $FolderToPerm /grant:r $UserPerm /T" -WindowStyle Hidden -Wait
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c C:\Windows\System32\icacls.exe $FolderToPerm /grant $AdminPerm /T" -WindowStyle Hidden -Wait
-    }
-    catch [System.Exception] {
-              Write-Host "Error Message: $($_.Exception.Message)"
-    }
-  }
-  Write-Log -Message "Adding folder permissions completed." -LogFile $LogFileLocation -AddTimestamp
-}#>
-
 $global:LOCALAPPDAT= $env:LOCALAPPDATA
 $global:regPath = ""
 $global:valueName = ""
 $global:LogFileLocation = "$LOCALAPPDAT\Temp\Start_Teams_Prep.ps1.log"
 $global:BackupFolderLocation = "C:\Windows\DPW\logs\UserProfileBackup"
+
+Start-Transcript -Path "$LOCALAPPDAT\Temp\StartTeamsPrep-transcript.log"
 
 try {
   $TSEnv = New-Object -ComObject "Microsoft.SMS.TSEnvironment" -ErrorAction SilentlyContinue
@@ -393,3 +288,4 @@ catch [System.Exception] {
     Write-Log -Message "Teams is not installed." -LogFile $LogFileLocation -AddTimestamp
   }
 
+  Stop-Transcript
