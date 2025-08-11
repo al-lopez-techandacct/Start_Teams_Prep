@@ -34,7 +34,7 @@ https://github.com/al-lopez-techandacct/DPW_Start_Teams_Post_IPU.git
 #>
 
 param (
-    [switch]$restore
+    [switch]$system
 )
 
 Function IsTeamsInstalled {
@@ -198,29 +198,8 @@ Function IsDocumentsRedirected {
     catch [System.Exception] {
       Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
     }    
-  }  
-<#
-.SYNOPSIS
->
+  }#>
 
-.DESCRIPTION
-Long description
-
-.PARAMETER Message
-Parameter description
-
-.PARAMETER LogFile
-Parameter description
-
-.PARAMETER AddTimestamp
-Parameter description
-
-.EXAMPLE
-An example
-
-.NOTES
-General notes
-#>
 function Write-Log {
   param (
       [string]$Message,
@@ -284,13 +263,16 @@ Function CleanUpProfileFolders {
 }
 
 Function RestoreProfileFolders {
-  #$PrimaryUsers = FindPrimaryUser
   $PrimaryUser = $env:USERNAME
 
+#if ($system) {
+  #$PrimaryUsers = FindPrimaryUser
   #foreach ($PrimaryUser in $PrimaryUsers) {
     #$PrimaryUser = $PrimaryUser -split '\\'
     #$PrimaryUser = $PrimaryUser[1]
-    
+  #}
+#}
+
     Write-Log -Message "RestoreProfileFolders is working on Primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
     $MoveFolderRestores = "$BackupFolderLocation\$PrimaryUser\Documents", "$BackupFolderLocation\$PrimaryUser\Downloads", "$BackupFolderLocation\$PrimaryUser\Desktop", "$BackupFolderLocation\$PrimaryUser\*.ost"
 
@@ -392,13 +374,6 @@ $global:regPath = ""
 $global:valueName = ""
 $global:LogFileLocation = "$LOCALAPPDAT\Temp\Start_Teams_Prep.ps1.log"
 $global:BackupFolderLocation = "C:\Windows\DPW\logs\UserProfileBackup"
-
-#if ($restore) {
-  #$LogLocationForRestore = $env:TEMP
-  #$LogFileLocation = "$LogLocationForRestore\UserProfileRestore\DPW_Start_Teams_Post_IPU.ps1.log"
-  #Write-Log -Message "Command line param is -restore" -LogFile $LogFileLocation -AddTimestamp
-
-#}
 
 try {
   $TSEnv = New-Object -ComObject "Microsoft.SMS.TSEnvironment" -ErrorAction SilentlyContinue
