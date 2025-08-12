@@ -211,8 +211,8 @@ Function ProcessProfileFolders{
   #IsDocumentsRedirected $PrimaryUserParam "restore"
   #Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected for primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
 
-  Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
-  if ($ReDirected -eq "Not Re-Directed") {
+  #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
+  #if ($ReDirected -eq "Not Re-Directed") {
     Foreach ($MoveFolderRestore in $MoveFolderRestores) {
       Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
 
@@ -237,11 +237,11 @@ Function ProcessProfileFolders{
         }        
       }
     }
-  } 
+  #} 
   
-    Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
+    #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
 
-    if($ReDirected -eq "Re-Directed") {  ## Documents is re-directed so we don't try to restore the Documents folder.
+    <#if($ReDirected -eq "Re-Directed") {  ## Documents is re-directed so we don't try to restore the Documents folder.
     Write-Log -Message "Documents is re-directed so we don't try to restore the Documents folder for $dst." -LogFile $LogFileLocation -AddTimestamp
       Foreach ($MoveFolderRestore in $MoveFolderRestores) {          
         if($MoveFolderRestore -like "*ost*"){            
@@ -266,16 +266,9 @@ Function ProcessProfileFolders{
           }        
         } 
       }       
-    }
+    }#>
     Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
-
-
-
 }
-
-
-
-
 
 $global:LOCALAPPDAT= $env:LOCALAPPDATA
 $global:regPath = ""
