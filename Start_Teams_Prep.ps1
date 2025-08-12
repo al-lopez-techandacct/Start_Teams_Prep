@@ -208,7 +208,7 @@ Function ProcessProfileFolders{
   #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
   #if ($ReDirected -eq "Not Re-Directed") {
 
-    CleanUpProfileFolders
+    CleanUpProfileFolders $PrimaryUserParam
     Foreach ($MoveFolderRestore in $MoveFolderRestores) {
       Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
 
@@ -233,7 +233,10 @@ Function ProcessProfileFolders{
         }        
       }
     }
-  #} 
+
+    Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
+  }    
+  <#} 
   
     #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
 
@@ -263,8 +266,6 @@ Function ProcessProfileFolders{
         } 
       }       
     }#>
-    Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
-}
 
 $global:LOCALAPPDAT= $env:LOCALAPPDATA
 $global:regPath = ""
