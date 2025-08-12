@@ -35,7 +35,7 @@ https://github.com/al-lopez-techandacct/DPW_Start_Teams_Post_IPU.git
 
 param (
     [switch]$system
-)>
+)
 
 Function IsTeamsInstalled {
   try {
@@ -287,13 +287,14 @@ catch [System.Exception] {
 }
 
   Write-Log -Message "Script started." -LogFile $LogFileLocation -AddTimestamp
-  $CallIsTeamsInstalled = IsTeamsInstalled
+  <#$CallIsTeamsInstalled = IsTeamsInstalled
   if ($CallIsTeamsInstalled) {
     Write-Log -Message "Teams is installed." -LogFile $LogFileLocation -AddTimestamp
-    RestoreProfileFolders
+    
 
   }else {
     Write-Log -Message "Teams is not installed." -LogFile $LogFileLocation -AddTimestamp
-  }
+  }#>
 
+  RestoreProfileFolders
   Stop-Transcript
