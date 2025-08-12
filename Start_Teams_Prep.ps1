@@ -146,16 +146,19 @@ function Write-Log {
 }
 
 Function CleanUpProfileFolders {
+  param (
+    [string]$PrimaryUserFolderToClean
+  )
   ### The Documents, Downloads, and Desktop folders must not exist for the file move below to work.
-  $PrimaryUsers = FindPrimaryUser
+  #$PrimaryUsers = FindPrimaryUser
 
-  foreach ($PrimaryUser in $PrimaryUsers) {
-    $PrimaryUser = $PrimaryUser -split '\\'
-    $PrimaryUser = $PrimaryUser[1]
+  #foreach ($PrimaryUser in $PrimaryUsers) {
+    #$PrimaryUser = $PrimaryUser -split '\\'
+    #$PrimaryUser = $PrimaryUser[1]
 
-    $MoveFolderRestores = "$BackupFolderLocation\$PrimaryUser\Documents", "$BackupFolderLocation\$PrimaryUser\Downloads", "$BackupFolderLocation\$PrimaryUser\Desktop", "$BackupFolderLocation\$PrimaryUser\*.ost"
+    #$MoveFolderRestores = "$BackupFolderLocation\$PrimaryUser\Documents", "$BackupFolderLocation\$PrimaryUser\Downloads", "$BackupFolderLocation\$PrimaryUser\Desktop", "$BackupFolderLocation\$PrimaryUser\*.ost"
 
-    $dst = "C:\Users\$PrimaryUser" 
+    $dst = "C:\Users\$PrimaryUserFolderToClean" 
       
     $CheckForProfileFolder = "$dst\Downloads"
     #IsDocumentsRedirected $PrimaryUser
@@ -171,7 +174,7 @@ Function CleanUpProfileFolders {
         Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
       }
     }
-  }
+  #}
 }
 
 Function RestoreProfileFolders {
@@ -204,6 +207,7 @@ Function ProcessProfileFolders{
 
   #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
   #if ($ReDirected -eq "Not Re-Directed") {
+
     CleanUpProfileFolders
     Foreach ($MoveFolderRestore in $MoveFolderRestores) {
       Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
