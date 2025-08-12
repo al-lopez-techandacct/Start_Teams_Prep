@@ -158,18 +158,9 @@ Function CleanUpProfileFolders {
     $dst = "C:\Users\$PrimaryUser" 
       
     $CheckForProfileFolder = "$dst\Downloads"
-    IsDocumentsRedirected $PrimaryUser
+    #IsDocumentsRedirected $PrimaryUser
 
-    if ($CheckForProfileFolder -and $ReDirected -eq "Re-Directed") {        
-      try {
-        Write-Log -Message "Removing $dst\Downloads and $dst\Desktop." -LogFile $LogFileLocation -AddTimestamp
-        Remove-Item "$dst\Downloads" -Recurse -Force
-        Remove-Item "$dst\Desktop" -Recurse -Force
-      }
-      catch [System.Exception] {
-        Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-      }
-    }else {  # Documents not re-directed.
+    if ($CheckForProfileFolder) { 
       try {
         Write-Log -Message "Removing $dst\Documents, $dst\Downloads, and $dst\Desktop." -LogFile $LogFileLocation -AddTimestamp
         Remove-Item "$dst\Documents" -Recurse -Force
@@ -213,6 +204,7 @@ Function ProcessProfileFolders{
 
   #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
   #if ($ReDirected -eq "Not Re-Directed") {
+    CleanUpProfileFolders
     Foreach ($MoveFolderRestore in $MoveFolderRestores) {
       Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
 
