@@ -33,9 +33,9 @@ https://github.com/al-lopez-techandacct/DPW_Start_Teams_Post_IPU.git
 
 #>
 
-<#param (
+param (
     [switch]$system
-)#>
+)>
 
 Function IsTeamsInstalled {
   try {
@@ -184,83 +184,98 @@ Function CleanUpProfileFolders {
 }
 
 Function RestoreProfileFolders {
-  $PrimaryUser = $env:USERNAME
+  if ($system) {
+    $PrimaryUsers = FindPrimaryUser
+    foreach ($PrimaryUser in $PrimaryUsers) {
+      $PrimaryUser = $PrimaryUser -split '\\'
+      $PrimaryUser = $PrimaryUser[1]
+      ProcessProfileFolders $PrimaryUser
+    }
+  }
+  else{
+    $PrimaryUser = $env:USERNAME
+    ProcessProfileFolders $PrimaryUser
+  }
+}
 
-#if ($system) {
-  #$PrimaryUsers = FindPrimaryUser
-  #foreach ($PrimaryUser in $PrimaryUsers) {
-    #$PrimaryUser = $PrimaryUser -split '\\'
-    #$PrimaryUser = $PrimaryUser[1]
-  #}
-#}
+Function ProcessProfileFolders{
+  param (
+    [string]$PrimaryUserParam
+  )
 
-    Write-Log -Message "RestoreProfileFolders is working on Primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
-    $MoveFolderRestores = "$BackupFolderLocation\$PrimaryUser\Documents", "$BackupFolderLocation\$PrimaryUser\Downloads", "$BackupFolderLocation\$PrimaryUser\Desktop", "$BackupFolderLocation\$PrimaryUser\*.ost"
+  Write-Log -Message "RestoreProfileFolders is working on Primary user $PrimaryUserParam." -LogFile $LogFileLocation -AddTimestamp
+  $MoveFolderRestores = "$BackupFolderLocation\$PrimaryUserParam\Documents", "$BackupFolderLocation\$PrimaryUserParam\Downloads", "$BackupFolderLocation\$PrimaryUserParam\Desktop", "$BackupFolderLocation\$PrimaryUserParam\*.ost"
 
-    $dst = "C:\Users\$PrimaryUser"    
-    
-    IsDocumentsRedirected $PrimaryUser "restore"
-    Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected for primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
+  $dst = "C:\Users\$PrimaryUserParam"    
+  
+  #IsDocumentsRedirected $PrimaryUserParam "restore"
+  #Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected for primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
 
+  Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
+  if ($ReDirected -eq "Not Re-Directed") {
+    Foreach ($MoveFolderRestore in $MoveFolderRestores) {
+      Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
+
+      if($MoveFolderRestore -like "*.ost*"){
+        Write-Log -Message "Found that $MoveFolderRestore is -like *Outlook*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp          
+        # Find and move all .ost files
+        try {
+          Write-Log -Message "Restoring $BackupFolderLocation\$PrimaryUser\*.ost to $dst\AppData\Local\Microsoft\Outlook." -LogFile $LogFileLocation -AddTimestamp
+          Copy-Item -Path "$BackupFolderLocation\$PrimaryUser\*.ost" -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
+        }
+        catch [System.Exception] {
+          Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
+        }        
+      }
+      if(!($MoveFolderRestore -like "*.ost*")){
+        try {
+          Write-Log -Message "Found that $MoveFolderRestore is not like .ost.  Going to copy $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
+          Copy-Item -Path $MoveFolderRestore -Destination $dst -Force
+        }
+        catch [System.Exception] {
+          Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
+        }        
+      }
+    }
+  } 
+  
     Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
-    if ($ReDirected -eq "Not Re-Directed") {
-      Foreach ($MoveFolderRestore in $MoveFolderRestores) {
-        Write-Log -Message "Checking if $MoveFolderRestore -like *ost*." -LogFile $LogFileLocation -AddTimestamp
 
-        if($MoveFolderRestore -like "*ost*"){
-          Write-Log -Message "Found that $MoveFolderRestore is -like *Outlook*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp          
+    if($ReDirected -eq "Re-Directed") {  ## Documents is re-directed so we don't try to restore the Documents folder.
+    Write-Log -Message "Documents is re-directed so we don't try to restore the Documents folder for $dst." -LogFile $LogFileLocation -AddTimestamp
+      Foreach ($MoveFolderRestore in $MoveFolderRestores) {          
+        if($MoveFolderRestore -like "*ost*"){            
           # Find and move all .ost files
+          Write-Log -Message "Found that $MoveFolderRestore is -like *ost*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp 
           try {
-            Write-Log -Message "Restoring $BackupFolderLocation\$PrimaryUser\*.ost to $dst\AppData\Local\Microsoft\Outlook." -LogFile $LogFileLocation -AddTimestamp
             Copy-Item -Path "$BackupFolderLocation\$PrimaryUser\*.ost" -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
           }
           catch [System.Exception] {
             Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
           }        
         }
-        if(!($MoveFolderRestore -like "*ost*")){
+        Write-Log -Message "Checking to see if $MoveFolderRestore contains the word Documents or contains the word Outlook for $dst.  if it doesn't then the next step is to move $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
+        if(-not ($MoveFolderRestore -like "*Documents*" -or $MoveFolderRestore -like "*Outlook*")){
+          Write-Log -Message "Detected $MoveFolderRestore does not contains the words Documents or Outlook.  Will attempt to move the Desktop and Downloads folders that were previously backed up, but not move a Documents folder." -LogFile $LogFileLocation -AddTimestamp
+
           try {
-            Write-Log -Message "Found that $MoveFolderRestore is not like ost.  Going to move $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
             Copy-Item -Path $MoveFolderRestore -Destination $dst -Force
           }
           catch [System.Exception] {
             Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
           }        
-        }
-      }
-    } 
-    
-      Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
+        } 
+      }       
+    }
+    Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
 
-      if($ReDirected -eq "Re-Directed") {  ## Documents is re-directed so we don't try to restore the Documents folder.
-      Write-Log -Message "Documents is re-directed so we don't try to restore the Documents folder for $dst." -LogFile $LogFileLocation -AddTimestamp
-        Foreach ($MoveFolderRestore in $MoveFolderRestores) {          
-          if($MoveFolderRestore -like "*ost*"){            
-            # Find and move all .ost files
-            Write-Log -Message "Found that $MoveFolderRestore is -like *ost*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp 
-            try {
-              Copy-Item -Path "$BackupFolderLocation\$PrimaryUser\*ost" -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
-            }
-            catch [System.Exception] {
-              Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-            }        
-          }
-          Write-Log -Message "Checking to see if $MoveFolderRestore contains the word Documents or contains the word Outlook for $dst.  if it doesn't then the next step is to move $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
-          if(-not ($MoveFolderRestore -like "*Documents*" -or $MoveFolderRestore -like "*Outlook*")){
-            Write-Log -Message "Detected $MoveFolderRestore does not contains the words Documents or Outlook.  Will attempt to move the Desktop and Downloads folders that were previously backed up, but not move a Documents folder." -LogFile $LogFileLocation -AddTimestamp
 
-            try {
-              Copy-Item -Path $MoveFolderRestore -Destination $dst -Force
-            }
-            catch [System.Exception] {
-              Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-            }        
-          } 
-        }       
-      }
-      Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
-    #}
+
 }
+
+
+
+
 
 $global:LOCALAPPDAT= $env:LOCALAPPDATA
 $global:regPath = ""
