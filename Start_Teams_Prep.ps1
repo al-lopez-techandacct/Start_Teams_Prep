@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-DPW_Start_Teams_Post_IPU - This script attempts to allow MS Teams to start post in place upgrade of Windows 11.
+Start_Teams_Prep - This script attempts to allow MS Teams to start post in place upgrade of Windows 11.
 
 .DESCRIPTION
 - See if MS Teams is installed.
@@ -19,8 +19,8 @@ powershell.exe -File DPW_Start_Teams_Post_IPU.ps1 -DeployMode Silent -executionp
       Write-Log -Message "Default path log entry." -AddTimestamp
 
 .INPUTS
-To restore the backed up/moved folders and .ost use the following command line:
-DPW_Start_Teams_Post_IPU.ps1 Restore (case sensitive).
+To restore the backed up/moved folders and .ost running in SYSTEM context use the following command line:
+Start_Teams_Prep.ps1 -system.
 
 .OUTPUTS
 None. This script does not generate any output.
@@ -208,10 +208,10 @@ Function ProcessProfileFolders{
     Write-Log -Message "Restoring $OstCopy to $dst\AppData\Local\Microsoft\Outlook." -LogFile $LogFileLocation -AddTimestamp
     Copy-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
   }
-  
+
   Write-Log -Message "Calling xcopy $BackupFolderLocation\$PrimaryUserParam $dst /E /D." -LogFile $LogFileLocation -AddTimestamp
   #xcopy "SourceFolderPath" "DestinationFolderPath" /E /D
-  xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D
+  xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D /y
 
   Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
 } 
