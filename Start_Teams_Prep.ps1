@@ -52,7 +52,6 @@ Function IsTeamsInstalled {
 
 Function FindPrimaryUser {
   # Define the registry path and value name
-
   $regPath = "HKLM:\SOFTWARE\DPW\Build"
   $valueName = "PrimaryUser"
 
@@ -64,62 +63,6 @@ Function FindPrimaryUser {
   $PrimaryUserNames = $PrimaryUserNames -split ' '
   return $PrimaryUserNames
 }
-
-Function IsDocumentsRedirected {
-  param (
-    [string]$HiveUser,
-    [string]$RestoreVal
-  )
-  # Get current user's Documents folder path from registry.
-    $ntuserPath = "C:\Users\$HiveUser\NTUSER.DAT"
-    $hiveName = "TempHive"
-
-    try {
-      reg load "HKU\$hiveName" "$ntuserPath"
-    }
-    catch [System.Exception] {
-      Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-    }   
-
-    # If this is restore then we can go into HKCU directly.
-    if ($RestoreVal -eq "restore"){
-      $regPath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
-      $valueName = "Personal"
-      Write-Log -Message "We're doing a restore and we're reading $regPath to determine Documents folder is being re-directed." -LogFile $LogFileLocation -AddTimestamp
-    }
-    else{
-      $regPath = "Registry::HKEY_USERS\TempHive\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
-      $valueName = "Personal"
-    }
-
-    #Adjust\translate for Primary user because the value uses an environment variable or "%USERPROFILE%\Documents".
-    # Read the path
-    $documentsPath = (Get-ItemProperty -Path $regPath -Name $valueName).$valueName
-    # Expand any environment variables (like %USERPROFILE%)
-    $expandedPath = [Environment]::ExpandEnvironmentVariables($documentsPath)
-    Write-Log -Message "Personal User shell folder read from registry = $expandedPath." -LogFile $LogFileLocation -AddTimestamp
-
-    if ($expandedPath -like "*Users*"){
-      $expandedPath = "C:\Users\$HiveUser\Documents"
-    }
-
-    # Determine if it's redirected
-    $userProfileDocs = "C:\Users\$HiveUser\Documents"
-    Write-Log -Message "Personal User shell folder = $expandedPath compared to $userProfileDocs." -LogFile $LogFileLocation -AddTimestamp
-    
-    if ($expandedPath -ne $userProfileDocs) {
-      Write-Log -Message "Documents folder is redirected." -LogFile $LogFileLocation -AddTimestamp
-      reg unload "HKU\$hiveName"
-      $global:ReDirected = "Re-Directed"
-      return "Re-Directed"
-    } 
-    else {
-      Write-Log -Message "Documents folder is NOT redirected." -LogFile $LogFileLocation -AddTimestamp
-      reg unload "HKU\$hiveName"
-      $global:ReDirected = "Not Re-Directed"
-      return "Not Re-Directed"
-    }
-}  
 
 function Write-Log {
   param (
@@ -145,38 +88,6 @@ function Write-Log {
   Add-Content -Path $LogFile -Value $entry
 }
 
-Function CleanUpProfileFolders {
-  param (
-    [string]$PrimaryUserFolderToClean
-  )
-  ### The Documents, Downloads, and Desktop folders must not exist for the file move below to work.
-  #$PrimaryUsers = FindPrimaryUser
-
-  #foreach ($PrimaryUser in $PrimaryUsers) {
-    #$PrimaryUser = $PrimaryUser -split '\\'
-    #$PrimaryUser = $PrimaryUser[1]
-
-    #$MoveFolderRestores = "$BackupFolderLocation\$PrimaryUser\Documents", "$BackupFolderLocation\$PrimaryUser\Downloads", "$BackupFolderLocation\$PrimaryUser\Desktop", "$BackupFolderLocation\$PrimaryUser\*.ost"
-
-    $dst = "C:\Users\$PrimaryUserFolderToClean" 
-      
-    $CheckForProfileFolder = "$dst\Downloads"
-    #IsDocumentsRedirected $PrimaryUser
-
-    if ($CheckForProfileFolder) { 
-      try {
-        Write-Log -Message "Removing $dst\Documents, $dst\Downloads, and $dst\Desktop." -LogFile $LogFileLocation -AddTimestamp
-        Remove-Item "$dst\Documents" -Recurse -Force
-        Remove-Item "$dst\Downloads" -Recurse -Force
-        Remove-Item "$dst\Desktop" -Recurse -Force
-      }
-      catch [System.Exception] {
-        Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-      }
-    }
-  #}
-}
-
 Function RestoreProfileFolders {
   if ($system) {
     $PrimaryUsers = FindPrimaryUser
@@ -198,7 +109,6 @@ Function ProcessProfileFolders{
   )
 
   Write-Log -Message "RestoreProfileFolders is working on Primary user $PrimaryUserParam." -LogFile $LogFileLocation -AddTimestamp
-  #$MoveFolderRestores = "$BackupFolderLocation\$PrimaryUserParam\Documents", "$BackupFolderLocation\$PrimaryUserParam\Downloads", "$BackupFolderLocation\$PrimaryUserParam\Desktop", "$BackupFolderLocation\$PrimaryUserParam\*.ost"
   $OstCopy = "$BackupFolderLocation\$PrimaryUserParam\*.ost"
 
   # Copy folders from C:\Windows\DPW\logs\UserProfileBackup to the user profile not overwriting items.
@@ -210,79 +120,11 @@ Function ProcessProfileFolders{
   }
 
   Write-Log -Message "Calling xcopy $BackupFolderLocation\$PrimaryUserParam $dst /E /D." -LogFile $LogFileLocation -AddTimestamp
-  #xcopy "SourceFolderPath" "DestinationFolderPath" /E /D
   xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D /y
 
   Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
 } 
   
-  #IsDocumentsRedirected $PrimaryUserParam "restore"
-  #Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected for primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
-
-  #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
-  #if ($ReDirected -eq "Not Re-Directed") {
-
-    #CleanUpProfileFolders $PrimaryUserParam
-
- 
-
-    <#Foreach ($MoveFolderRestore in $MoveFolderRestores) {
-      Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
-
-      if($MoveFolderRestore -like "*.ost*"){
-        Write-Log -Message "Found that $MoveFolderRestore is -like *Outlook*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp          
-        # Find and move all .ost files
-        try {
-          Write-Log -Message "Restoring $BackupFolderLocation\$PrimaryUser\*.ost to $dst\AppData\Local\Microsoft\Outlook." -LogFile $LogFileLocation -AddTimestamp
-          Copy-Item -Path "$BackupFolderLocation\$PrimaryUser\*.ost" -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
-        }
-        catch [System.Exception] {
-          Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-        }        
-      }
-      if(!($MoveFolderRestore -like "*.ost*")){
-        try {
-          Write-Log -Message "Found that $MoveFolderRestore is not like .ost.  Going to copy $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
-          Copy-Item -Path $MoveFolderRestore -Destination $dst -Force
-        }
-        catch [System.Exception] {
-          Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-        }        
-      }
-    }#>
-
-  
-  <#} 
-  
-    #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
-
-    <#if($ReDirected -eq "Re-Directed") {  ## Documents is re-directed so we don't try to restore the Documents folder.
-    Write-Log -Message "Documents is re-directed so we don't try to restore the Documents folder for $dst." -LogFile $LogFileLocation -AddTimestamp
-      Foreach ($MoveFolderRestore in $MoveFolderRestores) {          
-        if($MoveFolderRestore -like "*ost*"){            
-          # Find and move all .ost files
-          Write-Log -Message "Found that $MoveFolderRestore is -like *ost*. Will attempt to move the .ost that was previously backed up." -LogFile $LogFileLocation -AddTimestamp 
-          try {
-            Copy-Item -Path "$BackupFolderLocation\$PrimaryUser\*.ost" -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
-          }
-          catch [System.Exception] {
-            Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-          }        
-        }
-        Write-Log -Message "Checking to see if $MoveFolderRestore contains the word Documents or contains the word Outlook for $dst.  if it doesn't then the next step is to move $MoveFolderRestore to $dst." -LogFile $LogFileLocation -AddTimestamp
-        if(-not ($MoveFolderRestore -like "*Documents*" -or $MoveFolderRestore -like "*Outlook*")){
-          Write-Log -Message "Detected $MoveFolderRestore does not contains the words Documents or Outlook.  Will attempt to move the Desktop and Downloads folders that were previously backed up, but not move a Documents folder." -LogFile $LogFileLocation -AddTimestamp
-
-          try {
-            Copy-Item -Path $MoveFolderRestore -Destination $dst -Force
-          }
-          catch [System.Exception] {
-            Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
-          }        
-        } 
-      }       
-    }#>
-
 $global:LOCALAPPDAT= $env:LOCALAPPDATA
 $global:regPath = ""
 $global:valueName = ""
@@ -293,18 +135,8 @@ try {
   $TSEnv = New-Object -ComObject "Microsoft.SMS.TSEnvironment" -ErrorAction SilentlyContinue
 }
 catch [System.Exception] {
-  #Write-Warning -Message "Unable to construct Microsoft.SMS.TSEnvironment object, that will only work within a runnind TS"
   Write-Log -Message "Unable to construct Microsoft.SMS.TSEnvironment object, that will only work within a runnind TS" -LogFile $LogFileLocation -AddTimestamp
 }
 
   Write-Log -Message "Script started." -LogFile $LogFileLocation -AddTimestamp
-  <#$CallIsTeamsInstalled = IsTeamsInstalled
-  if ($CallIsTeamsInstalled) {
-    Write-Log -Message "Teams is installed." -LogFile $LogFileLocation -AddTimestamp
-    
-
-  }else {
-    Write-Log -Message "Teams is not installed." -LogFile $LogFileLocation -AddTimestamp
-  }#>
-
   RestoreProfileFolders
