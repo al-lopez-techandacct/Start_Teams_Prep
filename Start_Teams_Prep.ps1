@@ -198,9 +198,23 @@ Function ProcessProfileFolders{
   )
 
   Write-Log -Message "RestoreProfileFolders is working on Primary user $PrimaryUserParam." -LogFile $LogFileLocation -AddTimestamp
-  $MoveFolderRestores = "$BackupFolderLocation\$PrimaryUserParam\Documents", "$BackupFolderLocation\$PrimaryUserParam\Downloads", "$BackupFolderLocation\$PrimaryUserParam\Desktop", "$BackupFolderLocation\$PrimaryUserParam\*.ost"
+  #$MoveFolderRestores = "$BackupFolderLocation\$PrimaryUserParam\Documents", "$BackupFolderLocation\$PrimaryUserParam\Downloads", "$BackupFolderLocation\$PrimaryUserParam\Desktop", "$BackupFolderLocation\$PrimaryUserParam\*.ost"
+  $OstCopy = "$BackupFolderLocation\$PrimaryUserParam\*.ost"
 
-  $dst = "C:\Users\$PrimaryUserParam"    
+  # Copy folders from C:\Windows\DPW\logs\UserProfileBackup to the user profile not overwriting items.
+  $dst = "C:\Users\$PrimaryUserParam"
+
+  if ($OstCopy -like "*.ost*"){
+    Write-Log -Message "Restoring $OstCopy to $dst\AppData\Local\Microsoft\Outlook." -LogFile $LogFileLocation -AddTimestamp
+    Copy-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
+  }
+  
+  Write-Log -Message "Calling xcopy $BackupFolderLocation\$PrimaryUserParam $dst /E /D." -LogFile $LogFileLocation -AddTimestamp
+  #xcopy "SourceFolderPath" "DestinationFolderPath" /E /D
+  xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D
+
+  Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
+} 
   
   #IsDocumentsRedirected $PrimaryUserParam "restore"
   #Write-Log -Message "Function IsDocumentsRedirected returned $ReDirected for primary user $PrimaryUser." -LogFile $LogFileLocation -AddTimestamp
@@ -208,8 +222,11 @@ Function ProcessProfileFolders{
   #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
   #if ($ReDirected -eq "Not Re-Directed") {
 
-    CleanUpProfileFolders $PrimaryUserParam
-    Foreach ($MoveFolderRestore in $MoveFolderRestores) {
+    #CleanUpProfileFolders $PrimaryUserParam
+
+ 
+
+    <#Foreach ($MoveFolderRestore in $MoveFolderRestores) {
       Write-Log -Message "Checking if $MoveFolderRestore -like *.ost*." -LogFile $LogFileLocation -AddTimestamp
 
       if($MoveFolderRestore -like "*.ost*"){
@@ -232,10 +249,9 @@ Function ProcessProfileFolders{
           Write-Log -Message "Error Message: $($_.Exception.Message)" -LogFile $LogFileLocation -AddTimestamp
         }        
       }
-    }
+    }#>
 
-    Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
-  }    
+  
   <#} 
   
     #Write-Log -Message "*** ReDirected = $ReDirected <-end for $dst." -LogFile $LogFileLocation -AddTimestamp
@@ -273,8 +289,6 @@ $global:valueName = ""
 $global:LogFileLocation = "$LOCALAPPDAT\Temp\Start_Teams_Prep.ps1.log"
 $global:BackupFolderLocation = "C:\Windows\DPW\logs\UserProfileBackup"
 
-Start-Transcript -Path "$LOCALAPPDAT\Temp\StartTeamsPrep-transcript.log"
-
 try {
   $TSEnv = New-Object -ComObject "Microsoft.SMS.TSEnvironment" -ErrorAction SilentlyContinue
 }
@@ -294,4 +308,3 @@ catch [System.Exception] {
   }#>
 
   RestoreProfileFolders
-  Stop-Transcript
