@@ -120,17 +120,17 @@ Function ProcessProfileFolders{
     $folderPath = "$dst\AppData\Local\Microsoft\Outlook"
 
     if (-not (Test-Path -Path $folderPath)) {
-      New-Item -Path $folderPath -ItemType Directory
-      Move-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
+      #New-Item -Path $folderPath -ItemType Directory
+      #Move-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
     }
     else{
-      Move-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
+      #Move-Item -Path $OstCopy -Destination "$dst\AppData\Local\Microsoft\Outlook" -Force
     }    
   }
 
   Write-Log -Message "Calling xcopy $BackupFolderLocation\$PrimaryUserParam $dst /E /D." -LogFile $LogFileLocation -AddTimestamp
-  xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D /y
-  Remove-Item -Path "$BackupFolderLocation\$PrimaryUserParam" -Recurse -Force
+  xcopy "$BackupFolderLocation\$PrimaryUserParam" $dst /E /D /y /EXCLUDE:C:\Windows\DPW\Scripts\excludes_FileTypes.txt
+  #Remove-Item -Path "$BackupFolderLocation\$PrimaryUserParam" -Recurse -Force
 
   Write-Log -Message "Restoring folders to primary user's profile completed." -LogFile $LogFileLocation -AddTimestamp
 } 
